@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.1</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702; 1998</NoWarn>
+    <WarningsAsErrors>NU1605, CS4014</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibGit2Sharp" Version="0.25.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CSharpExt\CSharpExt\CSharpExt.csproj" />
+    <ProjectReference Include="..\..\Loqui\Loqui\Loqui.csproj" />
+    <ProjectReference Include="..\..\SpotifyAPI-NET\SpotifyAPI.Web.Auth\SpotifyAPI.Web.Auth.csproj" />
+    <ProjectReference Include="..\..\SpotifyAPI-NET\SpotifyAPI.Web\SpotifyAPI.Web.csproj" />
+    <ProjectReference Include="..\Noggog.MusicSync.Spotify\Noggog.MusicSync.Spotify.csproj" />
+  </ItemGroup>
+
+</Project>

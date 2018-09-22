@@ -1,0 +1,20 @@
+<HarmonizeConfig Version="1">
+   <ParentRepos>
+      <RepoListing>
+         <Nickname>CSharpExt</Nickname>
+         <Sha>fdbf25c283d41718c25c3a61e564ac45194692d4</Sha>
+         <Path>../CSharpExt</Path>
+         <CommitDate>09-12-2018 20:22:22</CommitDate>
+         <Description>FolderCleaner that monitors files and deletes any that were untouched/stale.  Directory/File enumeration refactoring</Description>
+         <Author>Justin Swanson</Author>
+      </RepoListing>
+      <RepoListing>
+         <Nickname>Loqui</Nickname>
+         <Sha>3ed55d41e077b1bdae4c33b72b8b8fff9a88889a</Sha>
+         <Path>../Loqui</Path>
+         <CommitDate>09-09-2018 01:44:22</CommitDate>
+         <Description>Xml export uses custom FileStream</Description>
+         <Author>Justin Swanson</Author>
+      </RepoListing>
+   </ParentRepos>
+</HarmonizeConfig>

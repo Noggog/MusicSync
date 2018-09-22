@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<Loqui xmlns="http://tempuri.org/LoquiSource.xsd">
+  <Object name="Artist" GUID="a30710e1-7d54-4d56-bed9-e03907c783bb" ID="3">
+    <Fields>
+      <String name="Name" />
+      <Dict name="Albums">
+        <KeyedValue keyAccessor="Name">
+          <Ref>
+            <Direct refName="Album" />
+          </Ref>
+        </KeyedValue>
+      </Dict>
+    </Fields>
+  </Object>
+  <Object name="Album" GUID="858e7c12-430e-469d-801a-1cb9718a0117" ID="1">
+    <Fields>
+      <String name="Name" />
+      <String name="SpotifyID" />
+      <RefList name="Tracks" refName="Track" />
+    </Fields>
+  </Object>
+  <Object name="Track" GUID="d598fb6d-a730-4b4e-91fc-bb937604de65" ID="2">
+    <Fields>
+      <String name="Name" />
+      <Bool name="Liked" />
+      <String name="SpotifyID" />
+      <List name="Tags">
+        <String />
+      </List>
+    </Fields>
+  </Object>
+  <Object name="Cache" GUID="633248fe-51e9-4a09-8caa-c7c40b8b9edb" ID="4">
+    <Fields>
+      <Dict name="Albums">
+        <KeyedValue keyAccessor="ID">
+          <Ref>
+            <Direct refName="AlbumCacheItem" />
+          </Ref>
+        </KeyedValue>
+      </Dict>
+    </Fields>
+  </Object>
+  <Object name="AlbumCacheItem" GUID="1f261d34-de71-417e-ad3c-9b8df4033e33" ID="5">
+    <Fields>
+      <String name="ID" />
+      <List name="Artists">
+        <String />
+      </List>
+    </Fields>
+  </Object>
+</Loqui>
