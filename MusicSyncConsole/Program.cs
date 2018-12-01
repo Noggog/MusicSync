@@ -13,6 +13,7 @@ using System.IO;
 using MusicRecord;
 using Noggog.Utility;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace MusicSyncConsole
 {
@@ -46,15 +47,18 @@ namespace MusicSyncConsole
         private static SpotifyWebAPI api;
         private static HashSet<string> savedTracks;
 
+        private static TaskCompletionSource<bool> done = new TaskCompletionSource<bool>();
+
         static async Task Main(string[] args)
         {
-            _clientId = string.IsNullOrEmpty(_clientId)
-                ? System.Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_ID")
-                : _clientId;
+            IConfiguration configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+            _clientId = configuration["SPOTIFY_CLIENT_ID"];
+            _secretId = configuration["SPOTIFY_SECRET_ID"];
 
-            _secretId = string.IsNullOrEmpty(_secretId)
-                ? System.Environment.GetEnvironmentVariable("SPOTIFY_SECRET_ID")
-                : _secretId;
+            System.Console.WriteLine($"Spotify Client ID: {_clientId}");
 
             if (File.Exists(_cacheLocation))
             {
@@ -72,14 +76,25 @@ namespace MusicSyncConsole
                     | Scope.UserLibraryRead
                     | Scope.PlaylistModifyPrivate
                     | Scope.PlaylistModifyPublic);
-            auth.AuthReceived += AuthOnAuthReceived;
+            auth.AuthReceived += async (object sender, AuthorizationCode payload) =>
+            {
+                try
+                {
+                    await AuthOnAuthReceived(sender, payload);
+                }
+                catch (Exception ex)
+                {
+                    System.Console.Write(ex);
+                    done.SetResult(false);
+                }
+            };
             auth.Start();
             auth.OpenBrowser();
 
-            Console.ReadLine();
+            await done.Task;
         }
 
-        private static async void AuthOnAuthReceived(object sender, AuthorizationCode payload)
+        private static async Task AuthOnAuthReceived(object sender, AuthorizationCode payload)
         {
             AuthorizationCodeAuth auth = (AuthorizationCodeAuth)sender;
             auth.Stop();
@@ -92,13 +107,16 @@ namespace MusicSyncConsole
                 UseAutoRetry = true,
             };
 
+            System.Console.WriteLine("Getting private profile.");
             profile = await api.GetPrivateProfileAsync();
 
             // Get Tracks
+            System.Console.WriteLine("Getting saved tracks.");
             savedTracks = (await api.FlattenPageAsync(await api.GetSavedTracksAsync()))
                 .Select(t => t.Track.Id)
                 .ToHashSet();
 
+            System.Console.WriteLine("Getting doom tracks.");
             doomTracks = (await api.FlattenPageAsync(
                 await api.GetPlaylistTracksAsync(
                     profile.Id,
@@ -106,12 +124,14 @@ namespace MusicSyncConsole
                     .ToList();
             doomTrackHash = doomTracks.Select(t => t.Track.Id).ToHashSet();
 
+            System.Console.WriteLine("Getting ambient tracks.");
             ambientTracks = (await api.FlattenPageAsync(
                 await api.GetPlaylistTracksAsync(
                     profile.Id,
                     _ambient)))
                     .ToList();
 
+            System.Console.WriteLine("Getting chill tracks.");
             chillTracks = (await api.FlattenPageAsync(
                 await api.GetPlaylistTracksAsync(
                     profile.Id,
@@ -124,6 +144,7 @@ namespace MusicSyncConsole
             chillTrackHash = chillTracks.Select(t => t.Track.Id).ToHashSet();
 
             // Remove things
+            System.Console.WriteLine("Handling removes.");
             await HandleRemoves(
                 (await api.FlattenPageAsync(
                     await api.GetPlaylistTracksAsync(
@@ -138,6 +159,7 @@ namespace MusicSyncConsole
                 removeFromListItself: false);
 
             // Refreshed genred source pools
+            System.Console.WriteLine("Refreshing genre source pools.");
             await RefreshPlaylist(
                 doomTracks
                 .Select(p => p.Track)
@@ -150,6 +172,7 @@ namespace MusicSyncConsole
                 _coolPool);
 
             // Save state to Git
+            System.Console.WriteLine("Saving to git.");
             if (!Repository.IsValid(_repoLocation))
             {
                 Repository.Clone(_repoUrl, _repoLocation);
@@ -173,6 +196,7 @@ namespace MusicSyncConsole
             //}
 
             System.Console.WriteLine("DONE");
+            done.SetResult(true);
         }
 
         private static async Task HandleRemoves(
