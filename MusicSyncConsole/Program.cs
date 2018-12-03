@@ -45,7 +45,7 @@ namespace MusicSyncConsole
 
         private static PrivateProfile profile;
         private static SpotifyWebAPI api;
-        private static HashSet<string> savedTracks;
+        private static HashSet<string> savedTracksHash;
 
         private static TaskCompletionSource<bool> done = new TaskCompletionSource<bool>();
 
@@ -112,7 +112,8 @@ namespace MusicSyncConsole
 
             // Get Tracks
             System.Console.WriteLine("Getting saved tracks.");
-            savedTracks = (await api.FlattenPageAsync(await api.GetSavedTracksAsync()))
+            var savedTracks = await api.FlattenPageAsync(await api.GetSavedTracksAsync());
+            savedTracksHash = savedTracks
                 .Select(t => t.Track.Id)
                 .ToHashSet();
 
@@ -163,12 +164,12 @@ namespace MusicSyncConsole
             await RefreshPlaylist(
                 doomTracks
                 .Select(p => p.Track)
-                .Where(t => savedTracks.Contains(t.Id)),
+                .Where(t => savedTracksHash.Contains(t.Id)),
                 _napalm);
             await RefreshPlaylist(
                 chillTracks
                 .Select(p => p.Track)
-                .Where(t => savedTracks.Contains(t.Id)),
+                .Where(t => savedTracksHash.Contains(t.Id)),
                 _coolPool);
 
             // Save state to Git
@@ -182,8 +183,8 @@ namespace MusicSyncConsole
             libraryFolder.Create();
             await ExportToFolder(
                 libraryFolder,
-                doomTracks
-                .Concat(chillTracks));
+                doomTracks.Select(s => s.Track)
+                    .Concat(chillTracks.Select(s => s.Track)));
 
             //using (var repo = new Repository(_repoLocation))
             //{
@@ -337,14 +338,15 @@ namespace MusicSyncConsole
 
         private static async Task ExportToFolder(
             DirectoryInfo dir,
-            IEnumerable<PlaylistTrack> tracks)
+            IEnumerable<FullTrack> tracks)
         {
             using (new FolderCleaner(dir, FolderCleaner.CleanType.WriteTime))
             {
                 Dictionary<string, Artist> dict = new Dictionary<string, Artist>();
 
                 foreach (var album in tracks
-                    .GroupBy(t => t.Track.Album)
+                    .Distinct(t => t.Id)
+                    .GroupBy(t => t.Album)
                     .OrderBy(a => a.Key.Name))
                 {
                     if (!cache.Albums.TryGetValue(album.Key.Id, out var albumCache))
@@ -371,21 +373,35 @@ namespace MusicSyncConsole
                     {
                         var tr = new Track()
                         {
-                            Liked = savedTracks.Contains(t.Track.Id),
-                            Name = t.Track.Name,
-                            SpotifyID = t.Track.Id
+                            Liked = savedTracksHash.Contains(t.Id),
+                            Name = t.Name,
+                            SpotifyID = t.Id,
+                            TrackNumber = t.TrackNumber,
+                            DiscNumber = t.DiscNumber
                         };
-                        if (chillTrackHash.Contains(t.Track.Id))
+                        if (chillTrackHash.Contains(t.Id))
                         {
                             tr.Tags.Add("Light");
                         }
-                        if (doomTrackHash.Contains(t.Track.Id))
+                        if (doomTrackHash.Contains(t.Id))
                         {
                             tr.Tags.Add("Heavy");
                         }
                         al.Tracks.Add(tr);
                     }
                 }
+
+                foreach (var artist in dict.Values)
+                {
+                    foreach (var album in artist.Albums.Values)
+                    {
+                        album.Tracks.SetTo(album.Tracks
+                            .GroupBy(t => t.DiscNumber)
+                            .OrderBy(g => g.Key)
+                            .SelectMany(g => g.OrderBy(t => t.TrackNumber)));
+                    }
+                }
+
                 foreach (var kv in dict
                     .OrderBy(kv => kv.Key))
                 {
