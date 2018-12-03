@@ -179,7 +179,6 @@ namespace MusicSyncConsole
             }
             DirectoryInfo libraryFolder = new DirectoryInfo(
                 Path.Combine(_repoLocation, "Library"));
-            libraryFolder.DeleteEntireFolder();
             libraryFolder.Create();
             await ExportToFolder(
                 libraryFolder,
@@ -393,6 +392,7 @@ namespace MusicSyncConsole
                     FileInfo file = new FileInfo($"{Path.Combine(dir.FullName, MakeValidFileName(kv.Key))}.xml");
                     file.Directory.Create();
                     kv.Value.Write_Xml(file.FullName);
+                    file.LastAccessTime = DateTime.Now;
                 }
 
                 cache.Write_Xml(_cacheLocation);
