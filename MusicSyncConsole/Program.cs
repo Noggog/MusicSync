@@ -183,8 +183,9 @@ namespace MusicSyncConsole
             libraryFolder.Create();
             await ExportToFolder(
                 libraryFolder,
-                doomTracks.Select(s => s.Track)
-                    .Concat(chillTracks.Select(s => s.Track)));
+                savedTracks.Select(s => s.Track)
+                    .Concat(doomTracks.Select(s => s.Track)
+                    .Concat(chillTracks.Select(s => s.Track))));
 
             //using (var repo = new Repository(_repoLocation))
             //{
