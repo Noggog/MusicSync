@@ -145,6 +145,10 @@ namespace MusicSyncConsole
             chillTrackHash = chillTracks.Select(t => t.Track.Id).ToHashSet();
 
             // Remove things
+            var thumbsDownTracks = (await api.FlattenPageAsync(
+                await api.GetPlaylistTracksAsync(
+                    profile.Id,
+                    _thumbsDown))).ToList();
             System.Console.WriteLine("Handling removes.");
             await HandleRemoves(
                 (await api.FlattenPageAsync(
@@ -153,10 +157,7 @@ namespace MusicSyncConsole
                         _remove))).ToList(),
                 removeFromListItself: true);
             await HandleRemoves(
-                (await api.FlattenPageAsync(
-                    await api.GetPlaylistTracksAsync(
-                        profile.Id,
-                        _thumbsDown))).ToList(),
+                thumbsDownTracks,
                 removeFromListItself: false);
 
             // Refreshed genred source pools
@@ -178,14 +179,18 @@ namespace MusicSyncConsole
             {
                 Repository.Clone(_repoUrl, _repoLocation);
             }
-            DirectoryInfo libraryFolder = new DirectoryInfo(
-                Path.Combine(_repoLocation, "Library"));
-            libraryFolder.Create();
+
+            // Export Library
             await ExportToFolder(
-                libraryFolder,
+                Path.Combine(_repoLocation, "Library"),
                 savedTracks.Select(s => s.Track)
                     .Concat(doomTracks.Select(s => s.Track)
                     .Concat(chillTracks.Select(s => s.Track))));
+
+            // Export Thumbs Down
+            await ExportToFolder(
+                Path.Combine(_repoLocation, "Disliked"),
+                thumbsDownTracks.Select(t => t.Track));
 
             //using (var repo = new Repository(_repoLocation))
             //{
@@ -338,9 +343,11 @@ namespace MusicSyncConsole
         }
 
         private static async Task ExportToFolder(
-            DirectoryInfo dir,
+            string dirStr,
             IEnumerable<FullTrack> tracks)
         {
+            DirectoryInfo dir = new DirectoryInfo(dirStr);
+            dir.Create();
             using (new FolderCleaner(dir, FolderCleaner.CleanType.WriteTime))
             {
                 Dictionary<string, Artist> dict = new Dictionary<string, Artist>();
